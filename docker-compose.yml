@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  ch_server:
+    image: yandex/clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+      - "9440:9440"
+    volumes:
+      - ./chdb:/var/lib/clickhouse
