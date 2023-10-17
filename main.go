@@ -1,96 +1,71 @@
 package main
 
 import (
-    "context"
     "fmt"
     "log"
     "time"
-    "net"
+    "os"
+    "bufio"
 
-    "github.com/ClickHouse/clickhouse-go/v2"
-    "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+    "github.com/yutfut/log-streamer/ch"
+    "sync"
 )
 
+func writeLog(wg *sync.WaitGroup, file *os.File) {
+    defer wg.Done()
 
+	logger := log.New(file, "", log.Ltime)
+    logger.Println("start")
+
+    var i uint64 = 0
+    for {
+        i+=1
+        logger.Println(i)
+        time.Sleep(5 * time.Second)
+    }
+}
+
+func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse) {
+    defer wg.Done()
+    
+    reader := bufio.NewReader(file)
+
+    for {
+        line, prefix, err := reader.ReadLine()
+        fmt.Println(prefix)
+        if err != nil {
+            fmt.Println(err)
+        }
+        if len(line) != 0 {
+            fmt.Println(string(line))
+            che.InsertLog(string(line))
+        } else {
+            fmt.Println("--//--")
+            time.Sleep(time.Second)
+        }
+    }
+}
 
 func main() {
-	fmt.Println("hello")
-
-	conn, err := connection1()
+    conn, err := ch.Connect()
     if err != nil {
         panic((err))
     }
 
-    fmt.Println(1)
+    che := ch.NewClickHouse(conn)
 
-	ctx := context.Background()
-    rows, err := conn.Query(ctx, "SELECT * FROM my_user")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    fmt.Println(2)
-
-	for rows.Next() {
-        var (
-            user_id uint32
-            name string
-        )
-        if err := rows.Scan(
-            &user_id,
-            &name,
-        ); err != nil {
-            log.Fatal(err)
-        }
-        fmt.Println("user_id: ", user_id, " name: ", name)
-    }
-
-    fmt.Println(3)
-}
-
-func connection1() (driver.Conn, error) {
-    dialCount := 0
-    conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{"127.0.0.1:9000"},
-		Auth: clickhouse.Auth{
-			Database: "default",
-			Username: "default",
-			Password: "",
-		},
-		DialContext: func(ctx context.Context, addr string) (net.Conn, error) {
-			dialCount++
-			var d net.Dialer
-			return d.DialContext(ctx, "tcp", addr)
-		},
-		Debug: true,
-		Debugf: func(format string, v ...any) {
-			fmt.Printf(format, v)
-		},
-		Settings: clickhouse.Settings{
-			"max_execution_time": 60,
-		},
-		Compression: &clickhouse.Compression{
-			Method: clickhouse.CompressionLZ4,
-		},
-		DialTimeout:      time.Second * 30,
-		MaxOpenConns:     5,
-		MaxIdleConns:     5,
-		ConnMaxLifetime:  time.Duration(10) * time.Minute,
-		ConnOpenStrategy: clickhouse.ConnOpenInOrder,
-		BlockBufferSize: 10,
-		MaxCompressionBuffer: 10240,
-		ClientInfo: clickhouse.ClientInfo{ // optional, please see Client info section in the README.md
-			Products: []struct {
-				Name    string
-				Version string
-			}{
-				{Name: "log-streamer", Version: "0.1"},
-			},
-		},
-	})
+    f, err := os.OpenFile("file.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		return nil, err
+		log.Fatalf("error opening file: %v", err)
 	}
+	defer f.Close()
 
-    return conn, nil
+    wg := &sync.WaitGroup{}
+	fmt.Println("hello")
+
+    wg.Add(2)
+    go writeLog(wg, f)
+
+    go readerLog(wg, f, che)
+    wg.Wait()
 }
