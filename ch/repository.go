@@ -19,7 +19,7 @@ func NewClickHouse(driver driver.Conn) *ClickHouse {
 
 func (CH *ClickHouse) InsertLog(log string) {
     ctx := context.Background()
-    _, err := CH.driver.Query(ctx, `INSERT INTO logs(log, timestamp) VALUES ($1, now)`, log)
+    _, err := CH.driver.Query(ctx, "INSERT INTO logs(log, timestamp) VALUES ($1, now())", log)
     if err != nil {
         fmt.Println(err)
     }

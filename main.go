@@ -1,6 +1,7 @@
 package main
 
 import (
+    "io"
     "fmt"
     "log"
     "time"
@@ -31,17 +32,15 @@ func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse) {
     reader := bufio.NewReader(file)
 
     for {
-        line, prefix, err := reader.ReadLine()
-        fmt.Println(prefix)
-        if err != nil {
+        line, _, err := reader.ReadLine()
+        
+        if err == io.EOF {
             fmt.Println(err)
         }
+
         if len(line) != 0 {
             fmt.Println(string(line))
             che.InsertLog(string(line))
-        } else {
-            fmt.Println("--//--")
-            time.Sleep(time.Second)
         }
     }
 }
