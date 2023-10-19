@@ -27,7 +27,7 @@ func writeLog(wg *sync.WaitGroup, file *os.File) {
     }
 }
 
-func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse) {
+func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse, fileName string) {
     defer wg.Done()
     
     reader := bufio.NewReader(file)
@@ -40,7 +40,7 @@ func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse) {
 
         if len(line) != 0 {
             fmt.Println(string(line))
-            che.InsertLog(string(line))
+            che.InsertLog(string(line), fileName)
         }
     }
 }
@@ -94,7 +94,7 @@ func main() {
     
         go writeLog(wg, fileInput)
     
-        go readerLog(wg, fileOutput, clickHouseDriver)
+        go readerLog(wg, fileOutput, clickHouseDriver, file)
     }
 
     wg.Wait()
