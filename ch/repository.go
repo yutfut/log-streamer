@@ -17,9 +17,14 @@ func NewClickHouse(driver driver.Conn) *ClickHouse {
     }
 }
 
-func (CH *ClickHouse) InsertLog(log string) {
+func (ch *ClickHouse) InsertLog(log, file string) {
     ctx := context.Background()
-    _, err := CH.driver.Query(ctx, "INSERT INTO logs(log, timestamp) VALUES ($1, now())", log)
+
+    var args []interface{}
+    args = append(args, log)
+	args = append(args, file)
+
+    _, err := ch.driver.Query(ctx, "INSERT INTO logs(log, timestamp) VALUES (generateUUIDv4(), $1, $2, now())", args)
     if err != nil {
         fmt.Println(err)
     }
