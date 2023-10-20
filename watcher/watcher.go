@@ -23,6 +23,10 @@ type WatcherS struct {
 	files []string
 }
 
+func NewWatcher() *WatcherS {
+    return &WatcherS{}
+}
+
 func (w *WatcherS) AddFiles(files []string) error {
 	if len(files) == 0 {
 		return errors.Errorf("files is empty")
