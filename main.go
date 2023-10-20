@@ -1,17 +1,24 @@
 package main
 
 import (
-    "io"
     "fmt"
     "flag"
     "log"
     "time"
     "os"
-    "bufio"
 
-    "github.com/yutfut/log-streamer/ch"
+    "github.com/yutfut/log-streamer/watcher"
     "sync"
 )
+
+// type Watcher interface {
+//     Start() error
+//     Stop() error
+// }
+    
+// type Sender interface {
+//     Send(message string)
+// }
 
 func writeLog(wg *sync.WaitGroup, file *os.File) {
     defer wg.Done()
@@ -27,23 +34,23 @@ func writeLog(wg *sync.WaitGroup, file *os.File) {
     }
 }
 
-func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse, fileName string) {
-    defer wg.Done()
+// func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse, fileName string) {
+//     defer wg.Done()
     
-    reader := bufio.NewReader(file)
+//     reader := bufio.NewReader(file)
 
-    for {
-        line, _, err := reader.ReadLine()
-        if err != nil && err != io.EOF {
-            fmt.Println(err)
-        }
+//     for {
+//         line, _, err := reader.ReadLine()
+//         if err != nil && err != io.EOF {
+//             fmt.Println(err)
+//         }
 
-        if len(line) != 0 {
-            fmt.Println(string(line))
-            che.InsertLog(string(line), fileName)
-        }
-    }
-}
+//         if len(line) != 0 {
+//             fmt.Println(string(line))
+//             che.InsertLog(string(line), fileName)
+//         }
+//     }
+// }
 
 
 // https://stackoverflow.com/questions/28322997/how-to-get-a-list-of-values-into-a-flag-in-golang
@@ -67,12 +74,10 @@ func main() {
 
     fmt.Println(files)
 
-    conn, err := ch.Connect()
-    if err != nil {
-        panic((err))
-    }
+    w := watcher.NewWatcher()
 
-    clickHouseDriver := ch.NewClickHouse(conn)
+    w.AddFiles(files)
+    w.Start()
 
     wg := &sync.WaitGroup{}
 
@@ -83,19 +88,43 @@ func main() {
             log.Fatalf("error opening file: %v", err)
         }
         defer fileInput.Close()
-    
-        fileOutput, err := os.Open(file)
-        if err != nil {
-            log.Fatalf("error opening file: %v", err)
-        }
-        defer fileOutput.Close()
 
-        wg.Add(2)
+        wg.Add(1)
     
         go writeLog(wg, fileInput)
-    
-        go readerLog(wg, fileOutput, clickHouseDriver, file)
     }
 
     wg.Wait()
+
+    // conn, err := ch.Connect()
+    // if err != nil {
+    //     panic((err))
+    // }
+
+    // clickHouseDriver := ch.NewClickHouse(conn)
+
+    // wg := &sync.WaitGroup{}
+
+    // for _, file := range files {
+
+    //     fileInput, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+    //     if err != nil {
+    //         log.Fatalf("error opening file: %v", err)
+    //     }
+    //     defer fileInput.Close()
+    
+    //     fileOutput, err := os.Open(file)
+    //     if err != nil {
+    //         log.Fatalf("error opening file: %v", err)
+    //     }
+    //     defer fileOutput.Close()
+
+    //     wg.Add(2)
+    
+    //     go writeLog(wg, fileInput)
+    
+    //     go readerLog(wg, fileOutput, clickHouseDriver, file)
+    // }
+
+    // wg.Wait()
 }
