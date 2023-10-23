@@ -11,9 +11,14 @@ type ClickHouse struct {
 	driver driver.Conn
 }
 
-func NewClickHouse(driver driver.Conn) *ClickHouse {
+func NewClickHouse() *ClickHouse {
+    conn, err := Connect()
+	if err != nil {
+		panic((err))
+	}
+
 	return &ClickHouse{
-		driver: driver,
+		driver: conn,
 	}
 }
 

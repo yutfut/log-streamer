@@ -89,7 +89,6 @@ func readerLog(wg *sync.WaitGroup, file *os.File, che senderInterface, filePath 
 		}
 
 		if len(line) != 0 {
-			fmt.Println(string(line))
 			che.Sender(string(line), filePath)
 		}
 
