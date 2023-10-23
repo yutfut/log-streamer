@@ -12,7 +12,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
-	"github.com/yutfut/log-streamer/ch"
 )
 
 type WatcherInterface interface {
@@ -21,15 +20,21 @@ type WatcherInterface interface {
 	Stop() error
 }
 
+type senderInterface interface {
+	Sender(log, file string) error
+}
+
 type Watcher struct {
+	sender     senderInterface
 	files      []string
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
 
-func NewWatcher() *Watcher {
+func NewWatcher(sender senderInterface) *Watcher {
 	ctxBuff, cancelFuncBuff := context.WithCancel(context.Background())
 	return &Watcher{
+		sender:     sender,
 		ctx:        ctxBuff,
 		cancelFunc: cancelFuncBuff,
 	}
@@ -45,49 +50,49 @@ func (w *Watcher) AddFiles(files []string) error {
 	return nil
 }
 
-func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse, filePath string, ctx context.Context) {
-// func readerLog(wg *sync.WaitGroup, file *os.File, filePath string, ctx context.Context) {
+func readerLog(wg *sync.WaitGroup, file *os.File, che senderInterface, filePath string, ctx context.Context) {
+	// func readerLog(wg *sync.WaitGroup, file *os.File, filePath string, ctx context.Context) {
 	defer wg.Done()
 
 	reader := bufio.NewReader(file)
 
-    watcher, err := fsnotify.NewWatcher()
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer watcher.Close()
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
 
-    watcher.Add(filePath)
+	watcher.Add(filePath)
 
 	for {
 		line, _, err := reader.ReadLine()
-        if err != nil {
-            if err == io.EOF {
-                fmt.Println(err, filePath)
+		if err != nil {
+			if err == io.EOF {
+				fmt.Println(err, filePath)
 
-                select {
-                case event, ok := <-watcher.Events:
-                    if !ok {
-                        return
-                    }
-                    fmt.Println(event)
-                    continue
-                case err, ok := <-watcher.Errors:
-                    if !ok {
-                        return
-                    }
-                    fmt.Println(err, filePath)
-                }
-            } else {
-                fmt.Println(err)
-            }
-        }
+				select {
+				case event, ok := <-watcher.Events:
+					if !ok {
+						return
+					}
+					fmt.Println(event)
+					continue
+				case err, ok := <-watcher.Errors:
+					if !ok {
+						return
+					}
+					fmt.Println(err, filePath)
+				}
+			} else {
+				fmt.Println(err)
+			}
+		}
 
 		if len(line) != 0 {
 			fmt.Println(string(line))
-			che.InsertLog(string(line), filePath)
+			che.Sender(string(line), filePath)
 		}
-        
+
 		select {
 		case <-ctx.Done():
 			return
@@ -98,13 +103,6 @@ func readerLog(wg *sync.WaitGroup, file *os.File, che *ch.ClickHouse, filePath s
 }
 
 func (w *Watcher) Start() error {
-	conn, err := ch.Connect()
-	if err != nil {
-		panic((err))
-	}
-
-	clickHouseDriver := ch.NewClickHouse(conn)
-
 	// tike out in WatcherInterface struct
 	wg := &sync.WaitGroup{}
 
@@ -119,8 +117,8 @@ func (w *Watcher) Start() error {
 
 		wg.Add(1)
 
-		go readerLog(wg, fileOutput, clickHouseDriver, file, w.ctx)
-        // go readerLog(wg, fileOutput, file, w.ctx)
+		go readerLog(wg, fileOutput, w.sender, file, w.ctx)
+		// go readerLog(wg, fileOutput, file, w.ctx)
 	}
 
 	wg.Wait()

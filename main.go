@@ -9,6 +9,7 @@ import (
 
 	"sync"
 
+	"github.com/yutfut/log-streamer/ch"
 	"github.com/yutfut/log-streamer/watcher"
 	"github.com/yutfut/log-streamer/writer"
 )
@@ -48,7 +49,14 @@ func main() {
 
 	fmt.Println(files)
 
-	watcher := watcher.NewWatcher()
+	conn, err := ch.Connect()
+	if err != nil {
+		panic((err))
+	}
+
+	clickHouseDriver := ch.NewClickHouse(conn)
+
+	watcher := watcher.NewWatcher(clickHouseDriver)
 
 	writer := writer.NewWatcher()
 

@@ -2,17 +2,17 @@ package ch
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
-	"fmt"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
 func Connect() (driver.Conn, error) {
-    dialCount := 0
-    conn, err := clickhouse.Open(&clickhouse.Options{
+	dialCount := 0
+	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: []string{"127.0.0.1:9000"},
 		Auth: clickhouse.Auth{
 			Database: "default",
@@ -34,12 +34,12 @@ func Connect() (driver.Conn, error) {
 		Compression: &clickhouse.Compression{
 			Method: clickhouse.CompressionLZ4,
 		},
-		DialTimeout:      time.Second * 30,
-		MaxOpenConns:     5,
-		MaxIdleConns:     5,
-		ConnMaxLifetime:  time.Duration(10) * time.Minute,
-		ConnOpenStrategy: clickhouse.ConnOpenInOrder,
-		BlockBufferSize: 10,
+		DialTimeout:          time.Second * 30,
+		MaxOpenConns:         5,
+		MaxIdleConns:         5,
+		ConnMaxLifetime:      time.Duration(10) * time.Minute,
+		ConnOpenStrategy:     clickhouse.ConnOpenInOrder,
+		BlockBufferSize:      10,
 		MaxCompressionBuffer: 10240,
 		ClientInfo: clickhouse.ClientInfo{ // optional, please see Client info section in the README.md
 			Products: []struct {
@@ -54,5 +54,5 @@ func Connect() (driver.Conn, error) {
 		return nil, err
 	}
 
-    return conn, nil
+	return conn, nil
 }

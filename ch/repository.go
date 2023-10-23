@@ -8,26 +8,26 @@ import (
 )
 
 type ClickHouse struct {
-    driver  driver.Conn
+	driver driver.Conn
 }
 
 func NewClickHouse(driver driver.Conn) *ClickHouse {
-    return &ClickHouse{
-        driver: driver,
-    }
+	return &ClickHouse{
+		driver: driver,
+	}
 }
 
-func (ch *ClickHouse) InsertLog(log, file string) error {
-    ctx := context.Background()
+func (ch *ClickHouse) Sender(log, file string) error {
+	ctx := context.Background()
 
-    var args []interface{}
-    args = append(args, log)
+	var args []interface{}
+	args = append(args, log)
 	args = append(args, file)
 
-    _, err := ch.driver.Query(ctx, "INSERT INTO logs(id, log, file, timestamp) VALUES (generateUUIDv4(), $1, $2, now())", args...)
-    if err != nil {
-        fmt.Println(err)
-        return err
-    }
-    return nil
+	_, err := ch.driver.Query(ctx, "INSERT INTO logs(id, log, file, timestamp) VALUES (generateUUIDv4(), $1, $2, now())", args...)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

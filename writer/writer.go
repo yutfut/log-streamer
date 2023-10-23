@@ -2,8 +2,8 @@ package writer
 
 import (
 	"context"
-	"os"
 	"log"
+	"os"
 	"time"
 
 	"sync"
