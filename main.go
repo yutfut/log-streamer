@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/yutfut/log-streamer/watcher"
+	"github.com/yutfut/log-streamer/writer"
 )
 
 func writeLog(wg *sync.WaitGroup, file *os.File) {
@@ -47,22 +48,12 @@ func main() {
 
 	fmt.Println(files)
 
-	wg := &sync.WaitGroup{}
-
-	for _, file := range files {
-
-		fileInput, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("error opening file: %v", err)
-		}
-		defer fileInput.Close()
-
-		wg.Add(1)
-
-		go writeLog(wg, fileInput)
-	}
-
 	w := watcher.NewWatcher()
+
+	writer := writer.NewWatcher()
+
+	writer.AddFiles(files)
+	go writer.Start()
 
 	w.AddFiles(files)
 	go w.Start()
@@ -71,6 +62,7 @@ func main() {
 	fmt.Println("STOP")
 
 	w.Stop()
+	writer.Stop()
 
-	wg.Wait()
+	time.Sleep(2 * time.Second)
 }
