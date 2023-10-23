@@ -48,21 +48,21 @@ func main() {
 
 	fmt.Println(files)
 
-	w := watcher.NewWatcher()
+	watcher := watcher.NewWatcher()
 
 	writer := writer.NewWatcher()
 
 	writer.AddFiles(files)
 	go writer.Start()
 
-	w.AddFiles(files)
-	go w.Start()
+	watcher.AddFiles(files)
+	go watcher.Start()
 
 	time.Sleep(10 * time.Second)
 	fmt.Println("STOP")
 
-	w.Stop()
 	writer.Stop()
+	watcher.Stop()
 
 	time.Sleep(2 * time.Second)
 }
