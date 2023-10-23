@@ -24,7 +24,7 @@ func (ch *ClickHouse) InsertLog(log, file string) error {
     args = append(args, log)
 	args = append(args, file)
 
-    _, err := ch.driver.Query(ctx, "INSERT INTO logs(log, timestamp) VALUES (generateUUIDv4(), $1, $2, now())", args)
+    _, err := ch.driver.Query(ctx, "INSERT INTO logs(id, log, file, timestamp) VALUES (generateUUIDv4(), $1, $2, now())", args...)
     if err != nil {
         fmt.Println(err)
         return err
