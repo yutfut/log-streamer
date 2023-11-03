@@ -7,6 +7,10 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 )
 
+type CH interface {
+	Sender(log, file string) error
+}
+
 type ClickHouse struct {
 	driver driver.Conn
 }

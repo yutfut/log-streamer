@@ -1,4 +1,4 @@
-package yetsender
+package yetSender
 
 import "fmt"
 

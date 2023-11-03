@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"sync"
 
@@ -101,17 +102,31 @@ func readerLog(wg *sync.WaitGroup, file *os.File, che senderInterface, filePath 
 	}
 }
 
+func waiterFile(file string) (*os.File, error) {
+	var err error
+	for i := 0; i < 10; i++ {
+		fileOutput, err := os.Open(file)
+		if err == nil {
+			return fileOutput, nil
+		}
+		time.Sleep(time.Second)
+	}
+	log.Fatalf("watcher error opening file: %v", err)
+	return nil, err
+}
+
 func (w *Watcher) Start() error {
 	// tike out in WatcherInterface struct
 	wg := &sync.WaitGroup{}
 
 	for _, file := range w.files {
 
-		fileOutput, err := os.Open(file)
+		fileOutput, err := waiterFile(file)
 		if err != nil {
-			log.Fatalf("error opening file: %v", err)
+			log.Fatalf("watcher waiter file: %v", err)
 			return err
 		}
+
 		defer fileOutput.Close()
 
 		wg.Add(1)

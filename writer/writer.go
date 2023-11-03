@@ -68,9 +68,15 @@ func (w *Writer) Start() error {
 
 	for _, file := range w.files {
 
+		// fileInput, err := os.Create(file)
+		// if err != nil {
+		// 	log.Println("error create file:", err)
+		// 	return err
+		// }
+
 		fileInput, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			log.Fatalf("error opening file: %v", err)
+			log.Println("writer error opening file:", err)
 			return err
 		}
 		defer fileInput.Close()
